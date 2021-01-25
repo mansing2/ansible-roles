@@ -1,0 +1,22 @@
+---
+# This Playbook Runs All the Roles that are required to setup Prisma.
+
+- hosts: "{{ TagName }}" 
+  remote_user: ec2-user 
+  become: yes
+  become_method: sudo
+  vars_files:
+      - vars/default.yml
+      - vars/test/test-env.yml
+ 
+  roles:
+    - Dns-Update
+    - Docker
+    - Rancher
+    - Rancher_reg
+    - prisma-docker
+    - Mongo
+ #    - Apache
+#    - linux-oracle
+#    - oracle-install
+

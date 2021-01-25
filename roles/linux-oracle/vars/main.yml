@@ -1,0 +1,75 @@
+packages_list:
+  - binutils
+  - compat-libcap1
+  - compat-libstdc++-33
+  - compat-libstdc++-33.i686
+  - glibc
+  - glibc.i686
+  - glibc-devel
+  - glibc-devel.i686
+  - ksh
+  - libaio
+  - libaio.i686
+  - libaio-devel
+#  - libaio-devel.i686
+  - libX11
+  - libX11.i686
+  - libXau
+  - libXau.i686
+  - libXi
+  - libXi.i686
+  - libXtst
+  - libXtst.i686
+  - libgcc
+#  - libgcc.i686
+  - libstdc++
+#  - libstdc++.i686
+  - libstdc++-devel
+ # - libstdc++-devel.i686
+  - libxcb
+  - libxcb.i686
+  - make
+  - nfs-utils
+  - net-tools
+#  - smartmontools
+  - sysstat
+  - unixODBC
+  - unixODBC-devel
+  - unzip
+kernel_params:
+# Shared memory and semaphore
+# look for document 226209.1 in oracle support for details
+  fs.aio-max-nr: 1048576
+  fs.file-max: 6815744
+  kernel.panic_on_oops: 1
+  kernel.sem: 250 32000 100 128
+  kernel.shmall: 1073741824
+  kernel.shmmax: 4398046511104
+  kernel.shmmni: 4096
+  net.core.rmem_default: 262144
+  net.core.rmem_max: 16777216
+  net.core.wmem_default: 262144
+  net.core.wmem_max: 16777216
+  net.ipv4.conf.all.rp_filter: 2
+  net.ipv4.conf.default.rp_filter: 2
+  net.ipv4.ip_local_port_range: 9000 65500
+  net.ipv4.tcp_keepalive_intvl: 60
+  net.ipv4.tcp_keepalive_probes: 10
+  net.ipv4.tcp_keepalive_time: 300
+  net.ipv4.tcp_rmem: 4096 87380 16777216
+  vm.dirty_background_ratio: 5
+  vm.dirty_ratio: 10
+  vm.swappiness: 10
+
+# Oracle user limits
+soft_no_file: 4096
+hard_no_file: 65536
+soft_nproc: 16384
+hard_nproc: 16384
+soft_stack: 10240
+hard_stack: 32768
+# mem lock 90% of RAM
+soft_memlock: 134217728
+hard_memlock: 134217728
+swap_file_path: /opt/swap
+swap_file_size_mb: 2000

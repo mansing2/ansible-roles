@@ -1,0 +1,107 @@
+################################################################################
+# ==> Task Required for Configure Linux to host Oracle Database 12c
+################################################################################
+
+# ==> Configure Linux
+- name: Install required libraries
+  yum: name={{ item }} state=present
+  with_items: "{{ packages_list }}"
+- name: Change kernel parameters
+  sysctl: name="{{ item.key }}" value="{{ item.value }}" state=present
+  with_dict: "{{ kernel_params }}"
+
+# # ==> Create users and groups
+- name: Create groups
+  group: name={{ oracle_install_group }} state=present
+- name: add extra groups
+  group: name={{ item }} state=present
+  with_items: "{{ extra_groups }}"
+- name: Create user
+  user: name={{ oracle_user }} group={{ oracle_install_group }} password={{ oracle_os_user_pass }}
+- name: Add extra groups
+  user: name={{ oracle_user }} groups={{ item }} append=yes
+  with_items: "{{ extra_groups }}"
+
+# Cant find the values for vars like oracle)user, install_group, os_user_pass, extra_groups.
+
+# # ==> Add limits for oracle user
+- name: Add oracle user limits
+  lineinfile: dest=/etc/security/limits.conf line='{{ oracle_user }} {{ item.limit }} {{ item.type}} {{ item.value }}'
+  with_items:
+    - { limit: 'soft', type: nofile, value: '{{ soft_no_file }}' }
+    - { limit: 'hard', type: nofile, value: '{{ hard_no_file }}' }
+    - { limit: 'soft', type: nproc, value: '{{ soft_nproc }}' }
+    - { limit: 'hard', type: nproc, value: '{{ hard_nproc }}' }
+    - { limit: 'soft', type: stack, value: '{{ soft_stack }}' }
+    - { limit: 'hard', type: stack, value: '{{ hard_stack }}' }
+    - { limit: 'soft', type: memlock, value: '{{ soft_memlock }}' }
+    - { limit: 'hard', type: memlock, value: '{{ hard_memlock }}' }
+
+# # ==> Create Base directories
+- name: Create Oracle Base directory
+  file: state=directory path={{ oracle_base }} owner={{ oracle_user }} group={{ oracle_install_group }} #no values found for oracle_user, base, install_group
+
+# # ==> Disable transparent hugepages
+- name: Copy script
+  copy: src=disable_trans_hugepages.sh dest='~/disable_trans_hugepages.sh' mode=755
+- name: Disable Transparent Huge Pages
+  shell: '~/disable_trans_hugepages.sh'
+
+# # ==> Configure huge pages
+- name: configure kernel for hugepages
+  sysctl: name="vm.nr_hugepages" value="{{ hugepages_nr }}" state=present # no value found for hugepages_nr
+  tags:
+    - hugepages
+
+
+- name: Copy scripts Volumes
+  copy: src=create_mount_oracle_folder.sh dest='~/create_mount_oracle_folder.sh' mode=755
+
+- name: Create Volumes
+  shell: '~/create_mount_oracle_folder.sh'
+  become_user: root
+
+
+# - name: Create swap file
+  command: dd if=/dev/zero of={{ swap_file_path }} bs=1024 count={{ swap_file_size_mb }}k
+           creates="{{ swap_file_path }}"
+  tags:
+    - swap.file.create
+
+# - name: Change swap file permissions
+  file: path="{{ swap_file_path }}"
+        owner=root
+        group=root
+        mode=0600
+  tags:
+    - swap.file.permissions
+
+- name: "Check swap file type"
+  command: file {{ swap_file_path }}
+  register: swapfile
+  tags:
+    - swap.file.mkswap
+
+- name: Make swap file
+  command: "mkswap {{ swap_file_path }}"
+  when: swapfile.stdout.find('swap file') == -1
+  tags:
+    - swap.file.mkswap
+  become_user: root
+
+- name: Write swap entry in fstab
+  mount: name=none
+         src={{ swap_file_path }}
+         fstype=swap
+         opts=sw
+         passno=0
+         dump=0
+         state=present
+  tags:
+    - swap.fstab
+
+- name: Mount swap
+  command: "swapon {{ swap_file_path }}"
+  when: ansible_swaptotal_mb < 1   #From where does the ansible_swaptotal_mb value come from?
+  tags:
+    - swap.file.swapon
